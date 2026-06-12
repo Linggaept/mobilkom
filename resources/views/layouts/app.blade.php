@@ -73,17 +73,22 @@
             position: fixed; top: 0; left: var(--sidebar-w); right: 0;
             height: var(--header-h);
             background: #fff;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 24px;
+            display: flex; align-items: center;
+            padding: 0 12px;
+            gap: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,.08);
             z-index: 1020;
         }
-        .topbar-logos { display: flex; align-items: center; gap: 14px; }
-        .topbar-logos img { height: 42px; object-fit: contain; }
-        .topbar-logos .divider { width: 1px; height: 32px; background: #e0e0e0; }
-        .topbar-title { font-weight: 700; color: var(--primary); font-size: 1rem; display: none; }
-        @media (min-width: 768px) { .topbar-title { display: block; } }
-        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .topbar-left  { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; }
+        .topbar-center { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
+        .topbar-logos { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }
+        .topbar-logos img { height: 34px; max-width: 110px; object-fit: contain; flex-shrink: 0; }
+        .topbar-logos .divider { width: 1px; height: 26px; background: #e0e0e0; flex-shrink: 0; }
+        .topbar-title { font-weight: 700; color: var(--primary); font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none; }
+        @media (min-width: 992px) { .topbar-title { display: block; } }
+        .topbar-center img { height: 34px; max-width: 120px; object-fit: contain; }
+        @media (max-width: 640px) { .topbar-center { display: none; } }
 
         /* ── Notification Bell ── */
         .notif-btn {
@@ -265,21 +270,25 @@
 
 <!-- Topbar -->
 <header class="topbar">
-    <div class="d-flex align-items-center gap-3">
+    {{-- Left --}}
+    <div class="topbar-left">
         <button class="btn btn-sm btn-outline-secondary sidebar-toggle" onclick="toggleSidebar()">
             <i class="bi bi-list"></i>
         </button>
         <div class="topbar-logos">
             <img src="{{ asset('logo/mobilkom.png') }}" alt="Mobilkom" onerror="this.style.display='none'">
-            <div class="divider"></div>
+            <div class="divider d-none d-md-block"></div>
             <span class="topbar-title">Sistem Pelaporan Radio Trunking</span>
         </div>
     </div>
-    <div class="topbar-logos" style="position:absolute;right:250px;top:50%;transform:translateY(-50%);">
+
+    {{-- Center --}}
+    <div class="topbar-center">
         <img src="{{ asset('logo/pertaminahulurokan.png') }}" alt="Pertamina Hulu Rokan" onerror="this.style.display='none'">
     </div>
+
+    {{-- Right --}}
     <div class="topbar-right">
-        <!-- Notification Bell -->
         <button class="notif-btn" id="notifBtn" onclick="toggleNotif(event)" title="Notifikasi">
             <i class="bi bi-bell-fill"></i>
             <span class="notif-badge d-none" id="notifCount">0</span>
@@ -287,7 +296,8 @@
 
         <div class="dropdown">
             <button class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle"></i> {{ auth()->user()->name }}
+                <i class="bi bi-person-circle"></i>
+                <span class="d-none d-md-inline"> {{ auth()->user()->name }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><span class="dropdown-item-text small text-muted">{{ ucfirst(auth()->user()->role) }}</span></li>
@@ -347,41 +357,45 @@ function toggleSidebar() {
 }
 
 // ── Notification system ──
+const _notifDropdown = document.getElementById('notifDropdown');
+const _notifCount    = document.getElementById('notifCount');
+const _notifList     = document.getElementById('notifList');
+
 function toggleNotif(e) {
     e.stopPropagation();
-    document.getElementById('notifDropdown').classList.toggle('show');
+    if (_notifDropdown) _notifDropdown.classList.toggle('show');
 }
 document.addEventListener('click', () => {
-    document.getElementById('notifDropdown').classList.remove('show');
+    if (_notifDropdown) _notifDropdown.classList.remove('show');
 });
-document.getElementById('notifDropdown').addEventListener('click', e => e.stopPropagation());
+if (_notifDropdown) _notifDropdown.addEventListener('click', e => e.stopPropagation());
 
 async function loadNotifications() {
+    if (!_notifCount || !_notifList) return;
     try {
         const res = await fetch('{{ route("notifications.unread") }}');
+        if (!res.ok || res.headers.get('content-type')?.indexOf('application/json') === -1) return;
         const data = await res.json();
-        const countEl = document.getElementById('notifCount');
-        const listEl  = document.getElementById('notifList');
 
         if (data.count > 0) {
-            countEl.textContent = data.count > 99 ? '99+' : data.count;
-            countEl.classList.remove('d-none');
+            _notifCount.textContent = data.count > 99 ? '99+' : data.count;
+            _notifCount.classList.remove('d-none');
         } else {
-            countEl.classList.add('d-none');
+            _notifCount.classList.add('d-none');
         }
 
         if (data.notifications.length === 0) {
-            listEl.innerHTML = '<div class="notif-empty"><i class="bi bi-bell-slash d-block fs-2 mb-2"></i>Tidak ada notifikasi baru</div>';
+            _notifList.innerHTML = '<div class="notif-empty"><i class="bi bi-bell-slash d-block fs-2 mb-2"></i>Tidak ada notifikasi baru</div>';
             return;
         }
 
-        listEl.innerHTML = data.notifications.map(n => `
+        _notifList.innerHTML = data.notifications.map(n => `
             <div class="notif-item unread" onclick="readNotif('${n.id}', '${n.data.url || '#'}')">
                 <div class="notif-msg">${n.data.pesan}</div>
                 <div class="notif-time"><i class="bi bi-clock me-1"></i>${n.created_at}</div>
             </div>
         `).join('');
-    } catch(e) { console.error(e); }
+    } catch(e) { /* session expired or network error, silently ignore */ }
 }
 
 async function readNotif(id, url) {
