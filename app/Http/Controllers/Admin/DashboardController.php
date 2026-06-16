@@ -60,8 +60,32 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Workload per teknisi: aktif, selesai (on-time/terlambat), ditolak terlibat
+        $deadlineHours = Laporan::DEADLINE_PROSES_JAM;
+        $teknisiWorkload = User::where('role', 'teknisi')
+            ->where('is_active', true)
+            ->leftJoin('laporan', function ($join) {
+                $join->on('laporan.teknisi_id', '=', 'users.id')
+                     ->whereNull('laporan.deleted_at');
+            })
+            ->selectRaw('
+                users.id, users.name, users.site, users.jabatan,
+                COUNT(CASE WHEN laporan.status IN ("diverifikasi","sedang_proses") THEN 1 END) AS aktif,
+                COUNT(CASE WHEN laporan.status = "selesai" THEN 1 END) AS selesai_total,
+                COUNT(CASE WHEN laporan.status = "selesai"
+                    AND laporan.tanggal_selesai <= DATE_ADD(laporan.tanggal_verifikasi, INTERVAL ? HOUR)
+                    THEN 1 END) AS ontime,
+                COUNT(CASE WHEN laporan.status = "selesai"
+                    AND laporan.tanggal_selesai > DATE_ADD(laporan.tanggal_verifikasi, INTERVAL ? HOUR)
+                    THEN 1 END) AS terlambat
+            ', [$deadlineHours, $deadlineHours])
+            ->groupBy('users.id', 'users.name', 'users.site', 'users.jabatan')
+            ->orderByDesc('aktif')
+            ->orderByDesc('selesai_total')
+            ->get();
+
         return view('admin.dashboard', compact(
-            'stats', 'chartLabels', 'chartData', 'statusData', 'siteData', 'laporan_terbaru'
+            'stats', 'chartLabels', 'chartData', 'statusData', 'siteData', 'laporan_terbaru', 'teknisiWorkload'
         ));
     }
 }

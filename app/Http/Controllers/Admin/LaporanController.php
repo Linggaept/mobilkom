@@ -31,7 +31,16 @@ class LaporanController extends Controller
     public function show(Laporan $laporan)
     {
         $laporan->load(['site', 'tipeRadio', 'jenisKerusakan', 'pelapor', 'teknisi', 'admin']);
-        $teknisis = User::where('role', 'teknisi')->where('is_active', true)->get();
+
+        $teknisis = User::where('role', 'teknisi')
+            ->where('is_active', true)
+            ->withCount(['laporanSebagaiTeknisi as aktif_count' => function ($q) {
+                $q->whereIn('status', ['diverifikasi', 'sedang_proses']);
+            }])
+            ->orderBy('aktif_count')
+            ->orderBy('name')
+            ->get();
+
         return view('admin.laporan.show', compact('laporan', 'teknisis'));
     }
 

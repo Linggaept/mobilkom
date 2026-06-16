@@ -67,6 +67,62 @@
     </div>
 </div>
 
+<!-- Workload Teknisi -->
+<div class="table-card mb-4">
+    <div class="table-card-header">
+        <h6><i class="bi bi-person-gear me-2"></i>Beban Kerja Teknisi</h6>
+        <span class="small text-muted">On-time: selesai ≤ {{ \App\Models\Laporan::DEADLINE_PROSES_JAM }} jam setelah diverifikasi</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Teknisi</th>
+                    <th class="text-center">Tugas Aktif</th>
+                    <th class="text-center">Selesai</th>
+                    <th class="text-center">On-time</th>
+                    <th class="text-center">Terlambat</th>
+                    <th class="text-center" style="min-width:140px">% On-time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($teknisiWorkload as $t)
+                @php
+                    $pct = $t->selesai_total > 0 ? round(($t->ontime / $t->selesai_total) * 100) : null;
+                    $pctColor = $pct === null ? 'secondary' : ($pct >= 80 ? 'success' : ($pct >= 50 ? 'warning' : 'danger'));
+                @endphp
+                <tr>
+                    <td>
+                        <div class="fw-700">{{ $t->name }}</div>
+                        <div class="small text-muted">{{ $t->jabatan }} &bull; {{ $t->site }}</div>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-{{ $t->aktif > 3 ? 'danger' : ($t->aktif > 0 ? 'primary' : 'light text-muted') }}">{{ $t->aktif }}</span>
+                    </td>
+                    <td class="text-center fw-700">{{ $t->selesai_total }}</td>
+                    <td class="text-center text-success fw-700">{{ $t->ontime }}</td>
+                    <td class="text-center text-danger fw-700">{{ $t->terlambat }}</td>
+                    <td class="text-center">
+                        @if($pct === null)
+                            <span class="small text-muted">—</span>
+                        @else
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:6px">
+                                    <div class="progress-bar bg-{{ $pctColor }}" style="width:{{ $pct }}%"></div>
+                                </div>
+                                <span class="small fw-700 text-{{ $pctColor }}">{{ $pct }}%</span>
+                            </div>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="6" class="text-center text-muted py-3 small">Belum ada teknisi aktif</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="chart-box">

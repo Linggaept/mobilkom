@@ -18,7 +18,14 @@
         <div class="table-card mb-4">
             <div class="table-card-header">
                 <h6><i class="bi bi-info-circle me-2"></i>Informasi Laporan</h6>
-                <span class="badge bg-{{ $laporan->status_badge }} fs-6">{{ $laporan->status_label }}</span>
+                <div class="d-flex gap-2 align-items-center">
+                    @if($laporan->status_penyelesaian === 'on_time')
+                        <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>On-Time</span>
+                    @elseif($laporan->status_penyelesaian === 'terlambat')
+                        <span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Terlambat</span>
+                    @endif
+                    <span class="badge bg-{{ $laporan->status_badge }} fs-6">{{ $laporan->status_label }}</span>
+                </div>
             </div>
             <div class="p-4">
                 <div class="row g-3">
@@ -84,9 +91,12 @@
                         <select name="teknisi_id" class="form-select" required>
                             <option value="">-- Pilih Teknisi --</option>
                             @foreach($teknisis as $t)
-                            <option value="{{ $t->id }}">{{ $t->name }} ({{ $t->site }})</option>
+                            <option value="{{ $t->id }}">
+                                {{ $t->name }} ({{ $t->site }}) — {{ $t->aktif_count }} tugas aktif
+                            </option>
                             @endforeach
                         </select>
+                        <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Diurutkan dari yang paling sedikit tugasnya</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-700 small">Catatan Admin</label>
@@ -166,6 +176,18 @@
                         <td class="fw-600 text-end text-success">{{ $laporan->tanggal_selesai->isoFormat('D MMM Y, HH:mm') }}</td>
                     </tr>
                     @endif
+                    @if($laporan->status_penyelesaian)
+                    <tr>
+                        <td class="text-muted py-1"><i class="bi bi-flag-fill me-1"></i>Status Penyelesaian</td>
+                        <td class="text-end">
+                            @if($laporan->status_penyelesaian === 'on_time')
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>On-Time</span>
+                            @else
+                                <span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Terlambat</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @endif
                     @if($laporan->durasi_total)
                     <tr style="border-top:1px solid #dee2e6">
                         <td class="text-muted py-1 pt-2"><i class="bi bi-hourglass-split me-1"></i>Total Durasi</td>
@@ -173,7 +195,17 @@
                     </tr>
                     @endif
                 </table>
-                @if($laporan->is_overdue_verifikasi)
+                @if($laporan->status_penyelesaian === 'on_time')
+                <div class="mt-2 p-2 rounded-2 small bg-success-subtle text-success" style="border:1px dashed #198754">
+                    <i class="bi bi-check-circle-fill me-1"></i>
+                    <strong>Selesai On-Time</strong> — sebelum tenggat {{ $laporan->deadline_proses->isoFormat('D MMM HH:mm') }}
+                </div>
+                @elseif($laporan->status_penyelesaian === 'terlambat')
+                <div class="mt-2 p-2 rounded-2 small bg-danger-subtle text-danger" style="border:1px dashed #dc3545">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    <strong>Selesai Terlambat</strong> — melewati tenggat {{ $laporan->deadline_proses->isoFormat('D MMM HH:mm') }}
+                </div>
+                @elseif($laporan->is_overdue_verifikasi)
                 <div class="mt-2 p-2 rounded-2 small bg-danger-subtle text-danger" style="border:1px dashed #dc3545">
                     <i class="bi bi-exclamation-triangle-fill me-1"></i>
                     <strong>Tenggat verifikasi telah lewat!</strong>

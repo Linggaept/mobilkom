@@ -160,6 +160,15 @@ class Laporan extends Model
             && now()->gt($this->deadline_proses);
     }
 
+    /** Status penyelesaian: on_time, terlambat, null jika belum selesai */
+    public function getStatusPenyelesaianAttribute(): ?string
+    {
+        if ($this->status !== 'selesai' || !$this->tanggal_selesai || !$this->deadline_proses) {
+            return null;
+        }
+        return $this->tanggal_selesai->lte($this->deadline_proses) ? 'on_time' : 'terlambat';
+    }
+
     /** Durasi dari dikirim sampai diverifikasi */
     public function getDurasiVerifikasiAttribute(): ?string
     {
