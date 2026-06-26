@@ -8,8 +8,8 @@ use App\Http\Controllers\Teknisi;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Pimpinan;
 
-// Root redirect
-Route::get('/', fn() => redirect()->route('login'));
+// Landing page (pre-login)
+Route::get('/', fn() => view('welcome'))->name('home')->middleware('guest');
 
 // Auth
 Route::middleware('guest')->group(function () {
